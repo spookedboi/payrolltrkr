@@ -1,49 +1,739 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="./styles.css">
-	<script src="https://cdn.jsdelivr.net/npm/@tsparticles/all@3.8.1/tsparticles.all.bundle.min.js"></script>
-	<script src="./particles.js"></script>
-	<style>
-		ul {
-			list-style-type: none;
-			padding-left: 0;
-			display: flex;
-			flex-direction: column;
-			gap: 0.5rem;
-		}
-	</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work hours ledger</title>
+<style>
+  :root{
+    --paper:#faf7f0;
+    --paper-line:#e4ddc9;
+    --ink:#2b2a25;
+    --ink-soft:#6b6656;
+    --ink-faint:#a39d88;
+    --rule:#d8d0b8;
+    --accent:#3c6e5a;
+    --accent-soft:#e7efe9;
+    --accent-line:#bcd4c7;
+    --danger:#a33b2d;
+    --danger-soft:#f5e6e1;
+    --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+    --mono:'IBM Plex Mono','SF Mono',Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size: 100% 42px;
+    background-position: 0 128px;
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:14px;
+    line-height:1.5;
+    padding-bottom:80px;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px;}
+
+  header{
+    padding:36px 0 22px;
+    border-bottom:2px solid var(--ink);
+    margin-bottom:28px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  header h1{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:30px;
+    margin:0;
+    letter-spacing:0.2px;
+  }
+  header .sub{color:var(--ink-soft);font-size:13px;margin-top:4px;}
+  .settings-toggle{
+    background:none;border:1px solid var(--ink-faint);color:var(--ink-soft);
+    border-radius:2px;padding:7px 14px;font-size:13px;cursor:pointer;font-family:var(--sans);
+  }
+  .settings-toggle:hover{border-color:var(--ink);color:var(--ink);}
+
+  .settings-panel{
+    display:none;
+    background:var(--accent-soft);
+    border:1px solid var(--accent-line);
+    border-radius:3px;
+    padding:18px 20px;
+    margin-bottom:28px;
+  }
+  .settings-panel.open{display:flex;gap:28px;flex-wrap:wrap;}
+  .settings-panel label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:4px;}
+  .settings-panel input, .settings-panel select{
+    font-family:var(--mono);font-size:14px;padding:6px 8px;border:1px solid var(--rule);
+    border-radius:2px;background:#fff;width:120px;
+  }
+
+  .tabs{
+    display:flex;
+    gap:2px;
+    margin-bottom:28px;
+    border-bottom:1px solid var(--rule);
+  }
+  .tab-btn{
+    background:none;border:none;cursor:pointer;
+    font-family:var(--serif);font-size:15px;color:var(--ink-soft);
+    padding:9px 4px;margin-right:22px;
+    border-bottom:2px solid transparent;
+    position:relative;top:1px;
+  }
+  .tab-btn.active{color:var(--ink);border-bottom-color:var(--accent);}
+  .tab-btn:hover{color:var(--ink);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  form.wish-form{
+    display:grid;
+    grid-template-columns: 1.6fr 0.8fr 1.4fr auto;
+    gap:10px;
+    margin-bottom:34px;
+    align-items:end;
+  }
+  form.wish-form .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
+  form.wish-form input{
+    width:100%;font-family:var(--mono);font-size:13px;padding:8px 9px;
+    border:1px solid var(--rule);border-radius:2px;background:#fff;color:var(--ink);
+  }
+  form.wish-form input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+  form.wish-form button{
+    background:var(--ink);color:var(--paper);border:none;border-radius:2px;
+    padding:9px 16px;font-size:13px;cursor:pointer;font-family:var(--sans);height:37px;
+  }
+  form.wish-form button:hover{background:var(--accent);}
+
+  .wish-card{
+    display:grid;
+    grid-template-columns: 1.8fr 0.9fr 1.1fr auto;
+    align-items:center;
+    gap:10px;
+    padding:14px 10px;
+    border-bottom:1px solid var(--rule);
+  }
+  .wish-card .w-name{font-family:var(--serif);font-size:15px;}
+  .wish-card .w-name a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--ink-faint);}
+  .wish-card .w-name a:hover{border-color:var(--ink);}
+  .wish-card .w-price{font-family:var(--mono);text-align:right;}
+  .wish-card .w-hours{font-family:var(--mono);text-align:right;color:var(--accent);}
+  .wish-card .w-hours .tag{display:block;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:var(--ink-faint);margin-bottom:2px;}
+  .wish-empty{color:var(--ink-faint);font-style:italic;font-family:var(--serif);padding:30px 0;text-align:center;}
+  .rate-note{font-size:12px;color:var(--ink-faint);margin:-10px 0 22px;}
+
+  .summary{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--ink);
+    border:1px solid var(--ink);
+    margin-bottom:32px;
+  }
+  .summary .cell{
+    background:var(--paper);
+    padding:16px 18px;
+  }
+  .summary .cell .label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;color:var(--ink-soft);margin-bottom:6px;}
+  .summary .cell .value{font-family:var(--mono);font-size:22px;}
+  .summary .cell.money .value{color:var(--accent);}
+
+  .panel-title{
+    font-family:var(--serif);
+    font-size:18px;
+    margin:0 0 14px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+  }
+  .panel-title .hint{font-size:12px;color:var(--ink-faint);font-family:var(--sans);}
+
+  form.entry-form{
+    display:grid;
+    grid-template-columns: 1.1fr 1.3fr 0.9fr 0.9fr 0.8fr 1.4fr auto;
+    gap:10px;
+    margin-bottom:34px;
+    align-items:end;
+  }
+  form.entry-form .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
+  form.entry-form input, form.entry-form select{
+    width:100%;
+    font-family:var(--mono);
+    font-size:13px;
+    padding:8px 9px;
+    border:1px solid var(--rule);
+    border-radius:2px;
+    background:#fff;
+    color:var(--ink);
+  }
+  form.entry-form input:focus, form.entry-form select:focus{
+    outline:none;border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);
+  }
+  form.entry-form button{
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:2px;
+    padding:9px 16px;
+    font-size:13px;
+    cursor:pointer;
+    font-family:var(--sans);
+    height:37px;
+  }
+  form.entry-form button:hover{background:var(--accent);}
+  .error-msg{grid-column:1/-1;color:var(--danger);font-size:12px;display:none;margin-top:-4px;}
+  .error-msg.show{display:block;}
+
+  table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+  thead th{
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    padding:0 10px 8px;
+    border-bottom:2px solid var(--ink);
+    font-weight:400;
+  }
+  thead th.num{text-align:right;}
+  tbody td{
+    padding:11px 10px;
+    border-bottom:1px solid var(--rule);
+    vertical-align:top;
+  }
+  tbody tr:hover{background:rgba(60,110,90,0.05);}
+  td.num{text-align:right;font-family:var(--mono);}
+  td.date{font-family:var(--mono);white-space:nowrap;}
+  td.job{color:var(--ink);}
+  td.notes{color:var(--ink-soft);font-size:13px;max-width:220px;}
+  .pay{color:var(--accent);font-weight:500;}
+  .del-btn{
+    background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:15px;
+    padding:2px 6px;line-height:1;
+  }
+  .del-btn:hover{color:var(--danger);}
+  .empty-row td{
+    text-align:center;color:var(--ink-faint);padding:40px 0;font-style:italic;font-family:var(--serif);
+  }
+
+  .month-group{
+    margin-top:6px;
+  }
+  .month-header{
+    display:flex;
+    justify-content:space-between;
+    padding:14px 10px 6px;
+    font-family:var(--serif);
+    font-size:15px;
+    color:var(--ink);
+    border-bottom:1px solid var(--ink-faint);
+    margin-top:18px;
+  }
+  .month-header .agg{font-family:var(--mono);font-size:13px;color:var(--ink-soft);}
+  .month-header .agg b{color:var(--accent);font-weight:500;}
+
+  .footer-actions{
+    display:flex;justify-content:flex-end;gap:10px;margin-top:8px;
+  }
+  .footer-actions button{
+    background:none;border:1px solid var(--ink-faint);color:var(--ink-soft);
+    border-radius:2px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:var(--sans);
+  }
+  .footer-actions button:hover{border-color:var(--ink);color:var(--ink);}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:3px;
+    font-size:13px;opacity:0;transition:opacity 0.2s, transform 0.2s;pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  @media (max-width: 720px){
+    form.entry-form{grid-template-columns:1fr 1fr;}
+    form.entry-form button{grid-column:1/-1;}
+    .summary{grid-template-columns:repeat(2,1fr);}
+  }
+</style>
 </head>
-
 <body>
-	<div id="tsparticles"></div>
-	<main>
-		<h1>Những thứ cần chuẩn bị cho đại học</h1>
-		<p>Bạn đang lo ngại về việc đi học đại học?<br>Bạn không biết các trường đại học xét tuyển như thế nào?</p>
-		<p>Vậy thì bạn tìm đúng chỗ rồi đấy!</p>
-		<p class="a">Qua trang web này, bạn sẽ biết được các thông tin chung cần thiết cho việc xét tuyển hồ sơ. Hãy
-			nhấn vào các đường link dưới để tham khảo nhé!</p>
-		<ul>
-			<li>
-				<a class="btn btn-outline-primary" href="./webcon1.html">Những tiêu chí cần thiết để làm hồ sơ</a>
-			</li>
-			<li>
-				<a class="btn btn-outline-primary" href="./webcon2.html">Quy trình chung đối với việc xét tuyển đại
-					học</a>
-			</li>
-			<li>
-				<a class="btn btn-outline-primary" href="https://www.youtube.com/embed/_pMLRYGx9Is?si=ZpZYJptbjoNI4zxi">Tất cả
-					các trường đại học ở Việt
-					Nam trong 11 phút &#40;Youtube&#41;</a>
-			</li>
-		</ul>
-		<p>Chúc các bạn đậu trường đại học mà các bạn muốn, nếu không được thì bọn tui cũng chịu thôi à
-			&#58;&#41;&#41;</p>
-		<p>Ghi chú: Mấy đứa bên 12 Anh 1 đừng copy html của bọn tui nha &#58;&#60;</p>
-	</main>
-</body>
+<div class="wrap">
 
+  <header>
+    <div>
+      <h1>Work hours ledger</h1>
+      <div class="sub">Log a shift, and pay is worked out for you.</div>
+    </div>
+    <button class="settings-toggle" id="settingsToggle" aria-expanded="false">Rate settings</button>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="ledger">Ledger</button>
+    <button class="tab-btn" data-tab="wishlist">Wishlist</button>
+  </nav>
+
+  <div class="settings-panel" id="settingsPanel">
+    <div class="field">
+      <label for="defaultRate">Default hourly rate</label>
+      <input type="number" id="defaultRate" min="0" step="0.01" value="0">
+    </div>
+    <div class="field">
+      <label for="currency">Currency</label>
+      <select id="currency">
+        <option value="¥">¥ JPY</option>
+        <option value="$">$ USD</option>
+        <option value="£">£ GBP</option>
+        <option value="€">€ EUR</option>
+        <option value="A$">A$ AUD</option>
+        <option value="C$">C$ CAD</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="overtimeThreshold">Overtime after (hrs/day)</label>
+      <input type="number" id="overtimeThreshold" min="0" step="0.5" value="8">
+    </div>
+    <div class="field">
+      <label for="overtimeMult">Overtime multiplier</label>
+      <input type="number" id="overtimeMult" min="1" step="0.05" value="1.0">
+    </div>
+  </div>
+
+  <section id="tab-ledger" class="tab-panel active">
+  <div class="summary" id="summary">
+    <div class="cell"><div class="label">Hours this week</div><div class="value" id="sumWeekHours">0</div></div>
+    <div class="cell money"><div class="label">Pay this week</div><div class="value" id="sumWeekPay">0</div></div>
+    <div class="cell"><div class="label">Hours this month</div><div class="value" id="sumMonthHours">0</div></div>
+    <div class="cell money"><div class="label">Pay this month</div><div class="value" id="sumMonthPay">0</div></div>
+  </div>
+
+  <h2 class="panel-title">Log a shift <span class="hint">rate defaults to your setting above — override per row if needed</span></h2>
+  <form class="entry-form" id="entryForm">
+    <div class="field">
+      <label for="fDate">Date</label>
+      <input type="date" id="fDate" required>
+    </div>
+    <div class="field">
+      <label for="fJob">Job / client</label>
+      <input type="text" id="fJob" placeholder="e.g. LangGo">
+    </div>
+    <div class="field">
+      <label for="fStart">Start</label>
+      <input type="time" id="fStart">
+    </div>
+    <div class="field">
+      <label for="fEnd">End</label>
+      <input type="time" id="fEnd">
+    </div>
+    <div class="field">
+      <label for="fBreak">Break (min)</label>
+      <input type="number" id="fBreak" min="0" step="1" value="0">
+    </div>
+    <div class="field">
+      <label for="fRate">Rate (blank = default)</label>
+      <input type="number" id="fRate" min="0" step="0.01" placeholder="auto">
+    </div>
+    <button type="submit">Add entry</button>
+    <div class="error-msg" id="formError"></div>
+  </form>
+
+  <h2 class="panel-title">Entries</h2>
+  <div id="tableContainer"></div>
+  <div class="footer-actions">
+    <button id="exportCsv">Export CSV</button>
+    <button id="clearAll">Clear all</button>
+  </div>
+  </section>
+
+  <section id="tab-wishlist" class="tab-panel">
+    <h2 class="panel-title">Add something you want <span class="hint">cost is converted into hours of work at your default rate</span></h2>
+    <form class="wish-form" id="wishForm">
+      <div class="field">
+        <label for="wName">Item</label>
+        <input type="text" id="wName" placeholder="e.g. noise-cancelling headphones" required>
+      </div>
+      <div class="field">
+        <label for="wPrice">Price</label>
+        <input type="number" id="wPrice" min="0" step="0.01" required>
+      </div>
+      <div class="field">
+        <label for="wUrl">Website link</label>
+        <input type="url" id="wUrl" placeholder="https://...">
+      </div>
+      <button type="submit">Add to wishlist</button>
+      <div class="error-msg" id="wishFormError"></div>
+    </form>
+
+    <h2 class="panel-title">Wishlist</h2>
+    <div id="wishlistContainer"></div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let entries = [];
+let wishlist = [];
+let settings = { rate: 0, currency: '¥', otThreshold: 8, otMult: 1.0 };
+let loaded = false;
+
+function fmtMoney(n){
+  return settings.currency + Number(n).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+}
+function fmtHours(n){
+  return (Math.round(n*100)/100).toString();
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._h);
+  showToast._h = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+function computeHours(start, end, breakMin){
+  if(!start || !end) return 0;
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let mins = (eh*60+em) - (sh*60+sm);
+  if(mins < 0) mins += 24*60;
+  mins -= (Number(breakMin)||0);
+  return Math.max(0, mins/60);
+}
+
+function computePay(hours, rate){
+  const r = Number(rate);
+  const ot = settings.otThreshold;
+  const mult = settings.otMult;
+  if(ot > 0 && hours > ot && mult > 1){
+    const reg = ot * r;
+    const over = (hours - ot) * r * mult;
+    return reg + over;
+  }
+  return hours * r;
+}
+
+async function loadData(){
+  try{
+    const s = localStorage.getItem('settings');
+    if(s){ settings = Object.assign(settings, JSON.parse(s)); }
+  }catch(e){}
+  try{
+    const e = localStorage.getItem('entries');
+    if(e){ entries = JSON.parse(e); }
+  }catch(e){}
+  try{
+    const w = localStorage.getItem('wishlist');
+    if(w){ wishlist = JSON.parse(w); }
+  }catch(e){}
+  loaded = true;
+  applySettingsToForm();
+  render();
+  renderWishlist();
+}
+
+async function saveSettings(){
+  try{ localStorage.setItem('settings', JSON.stringify(settings)); }
+  catch(e){ showToast('Could not save settings'); }
+}
+async function saveEntries(){
+  try{ localStorage.setItem('entries', JSON.stringify(entries)); }
+  catch(e){ showToast('Could not save entry'); }
+}
+async function saveWishlist(){
+  try{ localStorage.setItem('wishlist', JSON.stringify(wishlist)); }
+  catch(e){ showToast('Could not save wishlist item'); }
+}
+
+function applySettingsToForm(){
+  document.getElementById('defaultRate').value = settings.rate;
+  document.getElementById('currency').value = settings.currency;
+  document.getElementById('overtimeThreshold').value = settings.otThreshold;
+  document.getElementById('overtimeMult').value = settings.otMult;
+}
+
+function startOfWeek(d){
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = (day === 0 ? -6 : 1) - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+function render(){
+  if(!loaded) return;
+  const sorted = [...entries].sort((a,b)=> b.date.localeCompare(a.date));
+
+  const now = new Date();
+  const wkStart = startOfWeek(now);
+  const monthKey = now.toISOString().slice(0,7);
+
+  let weekHours=0, weekPay=0, monthHours=0, monthPay=0;
+  entries.forEach(e=>{
+    const d = new Date(e.date+'T00:00:00');
+    const hours = computeHours(e.start, e.end, e.breakMin);
+    const rate = (e.rate !== null && e.rate !== '' && e.rate !== undefined) ? e.rate : settings.rate;
+    const pay = computePay(hours, rate);
+    if(d >= wkStart){ weekHours += hours; weekPay += pay; }
+    if(e.date.slice(0,7) === monthKey){ monthHours += hours; monthPay += pay; }
+  });
+
+  document.getElementById('sumWeekHours').textContent = fmtHours(weekHours);
+  document.getElementById('sumWeekPay').textContent = fmtMoney(weekPay);
+  document.getElementById('sumMonthHours').textContent = fmtHours(monthHours);
+  document.getElementById('sumMonthPay').textContent = fmtMoney(monthPay);
+
+  const container = document.getElementById('tableContainer');
+  if(sorted.length === 0){
+    container.innerHTML = '<table><tbody><tr class="empty-row"><td>No shifts logged yet — add your first one above.</td></tr></tbody></table>';
+    return;
+  }
+
+  const groups = {};
+  sorted.forEach(e=>{
+    const key = e.date.slice(0,7);
+    if(!groups[key]) groups[key] = [];
+    groups[key].push(e);
+  });
+
+  let html = '';
+  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(key=>{
+    const rows = groups[key];
+    let gHours=0, gPay=0;
+    const label = new Date(key+'-02').toLocaleDateString(undefined,{month:'long', year:'numeric'});
+    let rowsHtml = '';
+    rows.forEach(e=>{
+      const hours = computeHours(e.start, e.end, e.breakMin);
+      const rate = (e.rate !== null && e.rate !== '' && e.rate !== undefined) ? e.rate : settings.rate;
+      const pay = computePay(hours, rate);
+      gHours += hours; gPay += pay;
+      rowsHtml += `<tr>
+        <td class="date">${e.date}</td>
+        <td class="job">${escapeHtml(e.job||'—')}</td>
+        <td class="num">${e.start||'—'}${e.end? ' – '+e.end : ''}</td>
+        <td class="num">${e.breakMin||0}</td>
+        <td class="num">${fmtHours(hours)}</td>
+        <td class="num">${fmtMoney(rate)}</td>
+        <td class="num pay">${fmtMoney(pay)}</td>
+        <td><button class="del-btn" data-id="${e.id}" aria-label="Delete entry">&times;</button></td>
+      </tr>`;
+    });
+    html += `<div class="month-group">
+      <div class="month-header"><span>${label}</span><span class="agg">${fmtHours(gHours)} hrs &nbsp;·&nbsp; <b>${fmtMoney(gPay)}</b></span></div>
+      <table>
+        <thead><tr>
+          <th>Date</th><th>Job</th><th class="num">Time</th><th class="num">Break</th>
+          <th class="num">Hours</th><th class="num">Rate</th><th class="num">Pay</th><th></th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+  container.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-id');
+      entries = entries.filter(e=>e.id !== id);
+      await saveEntries();
+      render();
+      showToast('Entry deleted');
+    });
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('settingsToggle').addEventListener('click', ()=>{
+  const p = document.getElementById('settingsPanel');
+  const open = p.classList.toggle('open');
+  document.getElementById('settingsToggle').setAttribute('aria-expanded', open);
+});
+
+['defaultRate','currency','overtimeThreshold','overtimeMult'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', async (ev)=>{
+    settings.rate = Number(document.getElementById('defaultRate').value) || 0;
+    settings.currency = document.getElementById('currency').value;
+    settings.otThreshold = Number(document.getElementById('overtimeThreshold').value) || 0;
+    settings.otMult = Number(document.getElementById('overtimeMult').value) || 1;
+    await saveSettings();
+    render();
+    renderWishlist();
+  });
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+document.getElementById('entryForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const errEl = document.getElementById('formError');
+  errEl.classList.remove('show');
+
+  const date = document.getElementById('fDate').value;
+  const job = document.getElementById('fJob').value.trim();
+  const start = document.getElementById('fStart').value;
+  const end = document.getElementById('fEnd').value;
+  const breakMin = document.getElementById('fBreak').value;
+  const rateRaw = document.getElementById('fRate').value;
+
+  if(!date){
+    errEl.textContent = 'Enter a date first.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(!start || !end){
+    errEl.textContent = 'Enter a start and end time.';
+    errEl.classList.add('show');
+    return;
+  }
+  const hours = computeHours(start, end, breakMin);
+  if(hours <= 0){
+    errEl.textContent = 'End time must be after start time (accounting for breaks).';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const entry = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    date, job, start, end,
+    breakMin: Number(breakMin)||0,
+    rate: rateRaw === '' ? null : Number(rateRaw)
+  };
+  entries.push(entry);
+  await saveEntries();
+  render();
+  showToast('Shift added');
+
+  document.getElementById('fJob').value = '';
+  document.getElementById('fStart').value = '';
+  document.getElementById('fEnd').value = '';
+  document.getElementById('fBreak').value = '0';
+  document.getElementById('fRate').value = '';
+  document.getElementById('fDate').focus();
+});
+
+document.getElementById('exportCsv').addEventListener('click', ()=>{
+  if(entries.length === 0){ showToast('Nothing to export yet'); return; }
+  const rows = [['Date','Job','Start','End','Break (min)','Hours','Rate','Pay']];
+  [...entries].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e=>{
+    const hours = computeHours(e.start, e.end, e.breakMin);
+    const rate = (e.rate !== null && e.rate !== undefined) ? e.rate : settings.rate;
+    const pay = computePay(hours, rate);
+    rows.push([e.date, e.job||'', e.start||'', e.end||'', e.breakMin||0, fmtHours(hours), rate, pay.toFixed(2)]);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'work-hours.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('clearAll').addEventListener('click', async ()=>{
+  if(entries.length === 0) return;
+  if(!confirm('Delete all logged entries? This cannot be undone.')) return;
+  entries = [];
+  await saveEntries();
+  render();
+  showToast('All entries cleared');
+});
+
+function renderWishlist(){
+  if(!loaded) return;
+  const container = document.getElementById('wishlistContainer');
+  if(wishlist.length === 0){
+    container.innerHTML = '<div class="wish-empty">Nothing on your wishlist yet.</div>';
+    return;
+  }
+  const rate = settings.rate;
+  const sorted = [...wishlist].sort((a,b)=>a.price-b.price);
+  let html = '';
+  if(!rate || rate <= 0){
+    html += '<div class="rate-note">Set a default hourly rate above to see hours-of-work equivalents.</div>';
+  }
+  sorted.forEach(item=>{
+    const hours = rate > 0 ? item.price / rate : null;
+    const nameHtml = item.url
+      ? `<a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.name)}</a>`
+      : escapeHtml(item.name);
+    html += `<div class="wish-card">
+      <div class="w-name">${nameHtml}</div>
+      <div class="w-price">${fmtMoney(item.price)}</div>
+      <div class="w-hours">${hours!==null ? `<span class="tag">hours needed</span>${fmtHours(hours)}` : '—'}</div>
+      <button class="del-btn" data-id="${item.id}" aria-label="Remove item">&times;</button>
+    </div>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const id = btn.getAttribute('data-id');
+      wishlist = wishlist.filter(w=>w.id !== id);
+      await saveWishlist();
+      renderWishlist();
+      showToast('Removed from wishlist');
+    });
+  });
+}
+
+document.getElementById('wishForm').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const errEl = document.getElementById('wishFormError');
+  errEl.classList.remove('show');
+
+  const name = document.getElementById('wName').value.trim();
+  const price = document.getElementById('wPrice').value;
+  const url = document.getElementById('wUrl').value.trim();
+
+  if(!name){
+    errEl.textContent = 'Enter an item name.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(price === '' || Number(price) <= 0){
+    errEl.textContent = 'Enter a price greater than 0.';
+    errEl.classList.add('show');
+    return;
+  }
+  if(url && !/^https?:\/\//i.test(url)){
+    errEl.textContent = 'Link should start with http:// or https://';
+    errEl.classList.add('show');
+    return;
+  }
+
+  wishlist.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name, price: Number(price), url
+  });
+  await saveWishlist();
+  renderWishlist();
+  showToast('Added to wishlist');
+
+  document.getElementById('wName').value = '';
+  document.getElementById('wPrice').value = '';
+  document.getElementById('wUrl').value = '';
+  document.getElementById('wName').focus();
+});
+
+document.getElementById('fDate').valueAsDate = new Date();
+loadData();
+</script>
+</body>
 </html>
